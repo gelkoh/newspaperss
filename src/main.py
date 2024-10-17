@@ -46,7 +46,7 @@ def main(stdscr):
             if selected_feed > 0:
                 selected_feed -= 1
 
-                if feed_win_offset > 0:
+                if feed_win_offset > 0 and selected_feed == feed_win_offset - 1:
                     feed_win_offset -= 1
 
         if key == ord("j"):
