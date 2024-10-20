@@ -1,6 +1,7 @@
 import os
 import json
 import curses
+import enum
 import xml.etree.ElementTree as ET
 import datetime
 import requests
@@ -9,6 +10,18 @@ import requests
 # Global constants
 FEEDS_PATH = os.path.expanduser("~/.newspaperss/feeds.json")
 FEEDS_DATA_PATH = os.path.expanduser("~/.newspaperss/feeds_data.json")
+
+
+# Enums for keys
+class Keys(enum.Enum):
+    QUIT = ord("q")
+    REFRESH_ALL = ord("R")
+    REFRESH = ord("r")
+    BACK = 27
+    ENTER = 10
+    UP = ord("k")
+    DOWN = ord("j")
+    OPEN = ord("o")
 
 
 def fetch_rss_feed(url):
@@ -103,7 +116,7 @@ def main(stdscr):
         key = stdscr.getch()
 
         # Quit application if "q" is pressed
-        if key == ord("q"):
+        if key == Keys.QUIT.value:
             break
 
         # Set resizing flag to True if window is resized
@@ -111,7 +124,7 @@ def main(stdscr):
             resizing = True
 
         # Refresh feeds when "R" is pressed, not by window resizing
-        if key == ord("R") and not resizing:
+        if key == Keys.REFRESH_ALL.value and not resizing:
             feeds = read_json(FEEDS_PATH)
             num_of_feeds = len(feeds)
             feeds_data_to_write = []
@@ -129,7 +142,7 @@ def main(stdscr):
 
         if num_of_feeds != 0:
             # Clear feed items window when pressing "Esc" key
-            if key == 27 and inside_feed_items_win:
+            if key == Keys.BACK.value and inside_feed_items_win:
                 inside_feed_items_win = False
                 feed_items_win.erase()
                 feed_items_win.refresh(0, 0, 1, 0, stdscr_num_of_lines - 1, stdscr_num_of_cols)
@@ -138,7 +151,7 @@ def main(stdscr):
                 continue
 
             # When pressing "Enter" key on a feed, display its feed items
-            if key == 10:
+            if key == Keys.ENTER.value:
                 feeds_win.erase()
 
                 feed_items = feeds_data[selected_feed]["feed_items"]
@@ -158,14 +171,14 @@ def main(stdscr):
 
                 continue
 
-            if key == ord("k"):
+            if key == Keys.UP.value:
                 if selected_feed > 0:
                     selected_feed -= 1
 
                     if feeds_win_offset > 0 and selected_feed == feeds_win_offset - 1:
                         feeds_win_offset -= 1
 
-            if key == ord("j"):
+            if key == Keys.DOWN.value:
                 if selected_feed < num_of_feeds - 1:
                     selected_feed += 1
 
