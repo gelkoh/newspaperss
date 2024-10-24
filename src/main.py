@@ -4,6 +4,7 @@ import curses
 import enum
 import xml.etree.ElementTree as ET
 import datetime
+import webbrowser
 import requests
 
 
@@ -149,6 +150,13 @@ def display_feed_items(feed_items_win, feed_items):
         feed_items_win.addstr(idx, 14, feed_item["item_title"])
 
 
+def display_feed_item(feed_item_win, feed_item):
+    feed_item_win.addstr(0, 0, f"Title: {feed_item["item_title"]}")
+    feed_item_win.addstr(1, 0, f"Date: {feed_item["item_pub_date"]}")
+    feed_item_win.addstr(2, 0, f"Link: {feed_item["item_url"]}")
+    feed_item_win.addstr(4, 0, feed_item["item_description"])
+
+
 def main(stdscr):
     # Initialize curses
     curses.initscr()
@@ -164,9 +172,10 @@ def main(stdscr):
     num_of_feeds = len(feeds_data)
 
     feeds_win = None
-    feed_items_win = None
-    current_win = None
     feed_items = None
+    feed_items_win = None
+    feed_item_win = None
+    current_win = None
 
     if num_of_feeds == 0:
         stdscr.addstr(1, 0, "No feeds available => Add some feeds to get started")
@@ -211,30 +220,41 @@ def main(stdscr):
                 elif key == Keys.DOWN.value: current_win.navigate_down()
 
             # When pressing "Enter" key on a feed, display its feed items
-            if current_win == feeds_win and key == Keys.ENTER.value:
-                feeds_win.erase()
+            if key == Keys.ENTER.value:
+                if current_win == feeds_win:
+                    feeds_win.erase()
 
-                feed_items = feeds_data[feeds_win.selected_line]["feed_items"]
-                num_of_feed_items = len(feed_items)
+                    feed_items = feeds_data[feeds_win.selected_line]["feed_items"]
+                    num_of_feed_items = len(feed_items)
 
-                feed_items_pad = curses.newpad(num_of_feed_items, stdscr_num_of_cols)
-                feed_items_win = PadWindowWrapper(feed_items_pad, num_of_feed_items)
+                    feed_items_pad = curses.newpad(num_of_feed_items, stdscr_num_of_cols)
+                    feed_items_win = PadWindowWrapper(feed_items_pad, num_of_feed_items)
 
-                current_win = feed_items_win
+                    current_win = feed_items_win
 
-                display_feed_items(feed_items_win, feed_items)
+                    display_feed_items(feed_items_win, feed_items)
 
-                feed_items_win.highlight_selected_line()
-                feed_items_win.refresh(
-                    feed_items_win.offset,
-                    0,
-                    1,
-                    0,
-                    stdscr_num_of_lines - 1,
-                    stdscr_num_of_cols
-                )
+                    feed_items_win.highlight_selected_line()
+                    feed_items_win.refresh(
+                        feed_items_win.offset,
+                        0,
+                        1,
+                        0,
+                        stdscr_num_of_lines - 1,
+                        stdscr_num_of_cols
+                    )
 
-                continue
+                    continue
+
+                if current_win == feed_items_win:
+                    feed_items_win.erase()
+                    feed_item = feeds_data[feeds_win.selected_line]["feed_items"][feed_items_win.selected_line]
+                    feed_item_win = curses.newwin(stdscr_num_of_lines - 1, stdscr_num_of_cols, 1, 0)
+                    display_feed_item(feed_item_win, feed_item)
+                    feed_item_win.refresh()
+                    current_win = feed_item_win
+
+                    continue
 
             if key == Keys.BACK.value:
                 if current_win == feed_items_win:
@@ -242,7 +262,22 @@ def main(stdscr):
                     feed_items_win.refresh(0, 0, 1, 0, stdscr_num_of_lines - 1, stdscr_num_of_cols)
                     current_win = feeds_win
 
-            if current_win is not None:
+                if current_win == feed_item_win:
+                    feed_item_win.erase()
+                    feed_item_win.refresh()
+                    current_win = feed_items_win
+
+            if key == Keys.OPEN.value:
+
+                if current_win == feed_items_win:
+                    item_url = feeds_data[feeds_win.selected_line]["feed_items"][feed_items_win.selected_line]["item_url"]
+                    webbrowser.open(item_url, new=0, autoraise=True)
+
+                if current_win == feed_item_win:
+                    item_url = feeds_data[feeds_win.selected_line]["feed_items"][feed_items_win.selected_line]["item_url"]
+                    webbrowser.open(item_url, new=0, autoraise=True)
+
+            if current_win is not None and current_win != feed_item_win:
                 if current_win == feeds_win:
                     display_feeds(feeds_win, feeds_data)
                 elif current_win == feed_items_win:
